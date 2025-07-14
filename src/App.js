@@ -3,7 +3,8 @@ import LoginPage from "./pages/LoginPage/LoginPage";
 import Registerpage from "./pages/Registerpage/Registerpage";
 import Forgotpasswordpage from "./pages/Forgotpasswordpage/Forgotpasswordpage";
 import Dashboardpage from "./pages/Dashboardpage/Dashboardpage";
-// importar los 
+import ProtectedRoute from "./pages/components/protectedRoute";
+import NotFoundPage from "./pages/components/NotfoundPage";
 
 import MostrarOcultar from "./pages/playground/Usetogle";
 import Temporizador from "./pages/playground/Useinterval";
@@ -15,12 +16,16 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<Registerpage />} />
         <Route path="/forgot" element={<Forgotpasswordpage />} />
-        <Route path="/dashboard" element={<Dashboardpage />} />
+
+        {/*Privadas*/}
+        <Route path="/Dashboardpage" element={<ProtectedRoute> <Dashboardpage /> </ProtectedRoute> } />
+        <Route path="*" element={<NotFoundPage />} />
 
         <Route path="/" element={<LoginPage />} />
       
         <Route path="/Usetogle" element={<MostrarOcultar />} />
         <Route path="/Useinterval" element={<Temporizador />} />
+       
       </Routes>
     </BrowserRouter>
   );
