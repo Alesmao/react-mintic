@@ -21,7 +21,6 @@ function App() {
         <Route path="/Dashboardpage" element={<ProtectedRoute> <Dashboardpage /> </ProtectedRoute> } />
         <Route path="*" element={<NotFoundPage />} />
 
-        <Route path="/" element={<LoginPage />} />
       
         <Route path="/Usetogle" element={<MostrarOcultar />} />
         <Route path="/Useinterval" element={<Temporizador />} />

@@ -50,7 +50,7 @@ function LoginPage() {
         timer: 2000,
         showConfirmButton: false
       }).then(() => {
-        navigate("/dashboard");
+        navigate("/dashboardpage");
       });
     } else {
       Swal.fire("Error", "Correo o contraseña incorrectos.", "error");
@@ -69,7 +69,7 @@ function LoginPage() {
           timer: 2000,
           showConfirmButton: false
         }).then(() => {
-          window.location.href = "/dashboard";
+          window.location.href = "/dashboardpage";
         });
       })
       .catch((error) => {
