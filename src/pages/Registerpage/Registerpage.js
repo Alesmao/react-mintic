@@ -1,101 +1,146 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../../firebase'; // asegúrate que db también viene de aquí
+import { doc, setDoc } from 'firebase/firestore';
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
-    nombre: '',
-    apellido: '',
-    fecha: '',
-    correo: '',
+    cedula: '',
+    nombres: '',
+    apellidos: '',
+    fechaNacimiento: '',
+    sexo: '',
     telefono: '',
-    nacionalidad: '',
+    email: '',
     password: '',
-    confirmar_password: '',
-    sexo: ''
+    confirmPassword: ''
   });
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Datos del formulario:', formData);
-    // Aquí puedes agregar la lógica para enviar los datos
+
+    // Validaciones básicas
+    for (const key in formData) {
+      if (formData[key] === '') {
+        Swal.fire("Campos incompletos", "Por favor llena todos los campos.", "warning");
+        return;
+      }
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      Swal.fire("Correo inválido", "Escribe un correo válido.", "error");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Swal.fire("Contraseña", "Las contraseñas no coinciden.", "error");
+      return;
+    }
+
+    try {
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // Guardar datos en Firestore
+      await setDoc(doc(db, 'usuarios', user.uid), {
+        cedula: formData.cedula,
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        fechaNacimiento: formData.fechaNacimiento,
+        sexo: formData.sexo,
+        telefono: formData.telefono,
+        email: formData.email,
+        estado: 'pendiente'
+      });
+
+      Swal.fire("¡Registro exitoso!", "Usuario registrado correctamente.", "success").then(() => {
+        window.location.href = "/";
+      });
+
+    } catch (error) {
+      console.error('Error al registrar:', error);
+
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          Swal.fire("Error", "Este correo ya está registrado.", "error");
+          break;
+        case 'auth/invalid-email':
+          Swal.fire("Error", "Correo inválido.", "error");
+          break;
+        case 'auth/weak-password':
+          Swal.fire("Error", "La contraseña debe tener al menos 6 caracteres.", "error");
+          break;
+        default:
+          Swal.fire("Error", "No se pudo registrar el usuario.", "error");
+      }
+    }
   };
 
   return (
-    <div className="container vh-100 d-flex justify-content-center align-items-center">
-      <div className="card shadow-sm" style={{ maxWidth: '900px', width: '100%', padding: '2rem' }}>
-        <div className="container mt-5">
-          <h2 className="mb-4">Formulario de Registro</h2>
-          <form className="row g-3" onSubmit={handleSubmit}>
-            {/* Nombres y Apellidos */}
-            <div className="col-md-6">
-              <label className="form-label">Nombres</label>
-              <input type="text" name="nombre" className="form-control" value={formData.nombre} onChange={handleChange} required />
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-gradient">
+      <div className="form-card">
+        <h3 className="mb-4 text-center">Registro de Usuario</h3>
+        <form onSubmit={handleSubmit}>
+          {/* Campos del formulario */}
+          <div className="mb-3">
+            <label className="form-label">Nombres</label>
+            <input type="text" className="form-control" name="nombres" value={formData.nombres} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Apellidos</label>
+            <input type="text" className="form-control" name="apellidos" value={formData.apellidos} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Cédula</label>
+            <input type="text" className="form-control" name="cedula" value={formData.cedula} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Fecha de Nacimiento</label>
+            <input type="date" className="form-control" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Teléfono</label>
+            <input type="tel" className="form-control" name="telefono" value={formData.telefono} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Sexo</label>
+            <div className="d-flex gap-3">
+              <div className="form-check">
+                <input className="form-check-input" type="radio" name="sexo" value="Masculino" checked={formData.sexo === 'Masculino'} onChange={handleChange} />
+                <label className="form-check-label">Masculino</label>
+              </div>
+              <div className="form-check">
+                <input className="form-check-input" type="radio" name="sexo" value="Femenino" checked={formData.sexo === 'Femenino'} onChange={handleChange} />
+                <label className="form-check-label">Femenino</label>
+              </div>
             </div>
-            <div className="col-md-6">
-              <label className="form-label">Apellidos</label>
-              <input type="text" name="apellido" className="form-control" value={formData.apellido} onChange={handleChange} required />
-            </div>
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Correo Electrónico</label>
+            <input type="email" className="form-control" name="email" value={formData.email} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Contraseña</label>
+            <input type="password" className="form-control" name="password" value={formData.password} onChange={handleChange} />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Repetir Contraseña</label>
+            <input type="password" className="form-control" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} />
+          </div>
 
-            {/* Fecha y Correo */}
-            <div className="col-md-6">
-              <label className="form-label">Fecha de nacimiento</label>
-              <input type="date" name="fecha" className="form-control" value={formData.fecha} onChange={handleChange} required />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Correo electrónico</label>
-              <input type="email" name="correo" className="form-control" value={formData.correo} onChange={handleChange} required />
-            </div>
-
-            {/* Teléfono y Nacionalidad */}
-            <div className="col-md-6">
-              <label className="form-label">Teléfono</label>
-              <input type="tel" name="telefono" className="form-control" value={formData.telefono} onChange={handleChange} required />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="nacionalidad" className="form-label">Nacionalidad:</label>
-              <select id="nacionalidad" name="nacionalidad" className="form-control" value={formData.nacionalidad} onChange={handleChange} required>
-                <option value="">Seleccione un país</option>
-                <option value="CO">Colombia</option>
-                <option value="MX">México</option>
-                <option value="AR">Argentina</option>
-                <option value="PE">Perú</option>
-                <option value="US">Estados Unidos</option>
-                {/* Agrega más países si deseas */}
-              </select>
-            </div>
-
-            {/* Contraseñas */}
-            <div className="col-md-6">
-              <label className="form-label">Contraseña</label>
-              <input type="password" name="password" className="form-control" value={formData.password} onChange={handleChange} required />
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Repetir contraseña</label>
-              <input type="password" name="confirmar_password" className="form-control" value={formData.confirmar_password} onChange={handleChange} required />
-            </div>
-
-            {/* Sexo */}
-            <div className="col-md-6">
-              <label className="form-label">Sexo</label>
-              <select name="sexo" className="form-select" value={formData.sexo} onChange={handleChange} required>
-                <option value="">Seleccione</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-
-            {/* Botón */}
-            <div className="col-12">
-              <button type="submit" className="btn btn-primary w-100">
-                Enviar
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="d-grid gap-2">
+            <button type="submit" className="btn btn-primary">Registrar</button>
+            <a href="/" className="btn btn-outline-secondary">Volver al inicio</a>
+          </div>
+        </form>
       </div>
     </div>
   );
