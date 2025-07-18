@@ -5,6 +5,7 @@ import Forgotpasswordpage from "./pages/Forgotpasswordpage/Forgotpasswordpage";
 import Dashboardpage from "./pages/Dashboardpage/Dashboardpage";
 import ProtectedRoute from "./pages/components/protectedRoute";
 import NotFoundPage from "./pages/components/NotfoundPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage/ResetPasswordPage";
 
 import MostrarOcultar from "./pages/playground/Usetogle";
 import Temporizador from "./pages/playground/Useinterval";
@@ -24,7 +25,7 @@ function App() {
       
         <Route path="/Usetogle" element={<MostrarOcultar />} />
         <Route path="/Useinterval" element={<Temporizador />} />
-       
+        <Route path="/Reset" element={<ResetPasswordPage/>} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,79 +1,115 @@
 import { useState, useRef } from "react";
 import Swal from "sweetalert2";
-import { auth, googleProvider } from '../../firebase';
-import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider, db } from '../../firebase';
+import { signInWithEmailAndPassword, fetchSignInMethodsForEmail, linkWithCredential, EmailAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import './LoginPage.css';
-import { useNavigate } from "react-router-dom"; // ⛔ Quitaste "Scripts" que no sirve aquí
+//import { useNavigate } from "react-router-dom"; // ⛔ Quitaste "Scripts" que no sirve aquí
 
-const usuarios = [
-  { email: "alesmao@gmail.com", password: "1234" },
-  { email: "maria@correo.com", password: "mar123" },
-  { email: "carlos@correo.com", password: "car123" },
-  { email: "laura@correo.com", password: "lau123" },
-  { email: "andres@correo.com", password: "and123" },
-  { email: "camila@correo.com", password: "cam123" },
-  { email: "david@correo.com", password: "dav123" },
-  { email: "paula@correo.com", password: "Pau123" },
-  { email: "jose@correo.com", password: "jos123" },
-  { email: "valentina@correo.com", password: "val123" }
-];
+
 
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [soundOn, setSoundOn] = useState(false);
   const videoRef = useRef(null); // 🆕 referencia para controlar el video
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+ // LOGIN CON EMAIL/PASSWORD
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!email || !password) {
-      Swal.fire("Campos vacíos", "Por favor llena todos los campos.", "warning");
-      return;
+  if (!email || !password) {
+    Swal.fire("Campos vacíos", "Por favor llena todos los campos.", "warning");
+    return;
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Opcional: verificar si existe documento en Firestore
+    const userDocRef = doc(db, 'usuarios', user.uid);
+    const userSnap = await getDoc(userDocRef);
+
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      if (data.estado === "Inactivo") {
+        Swal.fire("Acceso denegado", "Tu cuenta está inactiva. Contacta al administrador.", "error");
+        return;
+      }
     }
 
-    const formatoCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formatoCorreo.test(email)) {
-      Swal.fire("Correo inválido", "Por favor escribe un correo válido.", "error");
-      return;
+    Swal.fire({
+      title: "¡Bienvenido!",
+      text: `Sesión iniciada como ${user.email}`,
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      window.location.href = "/Dashboardpage";
+    });
+
+  } catch (error) {
+    console.error(error);
+    Swal.fire("Error", "Credenciales incorrectas o usuario no existe.", "error");
+  }
+};
+
+// LOGIN CON GOOGLE
+const handleGoogleLogin = async () => {
+  try {
+    const googleResult = await signInWithPopup(auth, googleProvider);
+    const user = googleResult.user;
+
+    // Verificar si ya existía ese correo con otro método
+    const signInMethods = await fetchSignInMethodsForEmail(auth, user.email);
+
+    if (signInMethods.includes('password')) {
+      // Si existe por password hay que vincularlo
+      const password = await solicitarPassword();
+      if (!password) {
+        Swal.fire("Cancelado", "Operación cancelada.", "info");
+        return;
+      }
+
+      // Crear credential de email/password
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await linkWithCredential(user, credential);
     }
 
-    const usuarioValido = usuarios.find(u => u.email === email && u.password === password);
+    Swal.fire({
+      title: "¡Bienvenido!",
+      text: `Sesión iniciada con Google: ${user.email}`,
+      icon: "success",
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      window.location.href = "/dashboard";
+    });
 
-    if (usuarioValido) {
-      Swal.fire({
-        title: "¡Bienvenido!",
-        text: "Inicio de sesión exitoso.",
-        icon: "success",
-        timer: 2000,
-        showConfirmButton: false
-      }).then(() => {
-        navigate("/dashboardpage");
-      });
-    } else {
-      Swal.fire("Error", "Correo o contraseña incorrectos.", "error");
-    }
-  };
+  } catch (error) {
+    console.error(error);
+    Swal.fire("Error", "No se pudo iniciar sesión con Google.", "error");
+  }
+};
 
-  const handleGoogleLogin = () => {
-    signInWithPopup(auth, googleProvider)
-      .then((result) => {
-        Swal.fire({
-          title: "¡Bienvenido!",
-          text: `Sesión iniciada con Google: ${result.user.email}`,
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => {
-          window.location.href = "/dashboardpage";
-        });
-      })
-      .catch((error) => {
-        console.error(error);
-        Swal.fire("Error", "No se pudo iniciar sesión con Google.", "error");
-      });
-  };
+const solicitarPassword = async () => {
+  const result = await Swal.fire({
+    title: "Contraseña requerida",
+    input: "password",
+    inputLabel: "Introduce tu contraseña para vincular cuentas",
+    inputPlaceholder: "Tu contraseña",
+    showCancelButton: true,
+    confirmButtonText: "Vincular",
+    cancelButtonText: "Cancelar"
+  });
+
+  if (result.isConfirmed && result.value) {
+    return result.value;
+  }
+  return null;
+};
 
   // 🔊 Toggle para activar/desactivar sonido
   const toggleSound = () => {

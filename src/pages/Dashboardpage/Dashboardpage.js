@@ -104,7 +104,7 @@ function DashboardPage() {
           <nav className="navbar">
             <div className="container-fluid">
               {/* ✅ Corregido: Link con to="/" en lugar de <a> */}
-              <Link to="/" className="navbar-brand">SportGlam</Link>
+              <Link to="/" className="navbar-brand">Mi pagina</Link>
               <form className="d-flex" role="search">
                 <input className="form-control me-2" type="search" placeholder="Buscar" aria-label="Buscar" />
                 <button className="btn btn-outline-success" type="submit">Buscar</button>
@@ -117,7 +117,7 @@ function DashboardPage() {
 
       {/* Bienvenida */}
       <div className="d-flex justify-content-center align-items-center mt-4">
-        <p className="fs-1 text-primary fw-bold">Bienvenido a SportGlam</p>
+        <p className="fs-1 text-primary fw-bold">Bienvenido mi pagina</p>
       </div>
 
       {/* Tabla de Auxiliares */}
